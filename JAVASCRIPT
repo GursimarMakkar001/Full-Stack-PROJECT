@@ -1,0 +1,166 @@
+// Sample Products Data
+const products = [
+  { id: 1, name: 'Wireless Headphones', price: 6599, description: 'Premium noise-cancelling headphones' },
+  { id: 2, name: 'Smart Watch', price: 16499, description: 'Fitness tracking smartwatch' },
+  { id: 3, name: 'Laptop Stand', price: 4199, description: 'Ergonomic aluminum stand' },
+  { id: 4, name: 'USB-C Hub', price: 3299, description: '7-in-1 multiport adapter' },
+  { id: 5, name: 'Wireless Mouse', price: 2499, description: 'Ergonomic wireless mouse' },
+  { id: 6, name: 'Keyboard', price: 7499, description: 'Mechanical RGB keyboard' }
+];
+
+// Cart State
+let cart = [];
+
+// DOM Elements
+const productsContainer = document.getElementById('products');
+const cartContainer = document.getElementById('cart');
+const cartCount = document.getElementById('cart-count');
+const totalElement = document.getElementById('total');
+const checkoutBtn = document.getElementById('checkout-btn');
+const statusBar = document.getElementById('status-bar');
+
+// Initialize App
+function init() {
+  loadCart();
+  renderProducts();
+  renderCart();
+  setupEventListeners();
+  checkOnlineStatus();
+  registerServiceWorker();
+}
+
+// Register Service Worker (PWA)
+function registerServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(reg => console.log('✅ Service Worker Registered', reg))
+      .catch(err => console.log('❌ Service Worker Error', err));
+  }
+}
+
+// Render Products
+function renderProducts() {
+  productsContainer.innerHTML = products.map(product => `
+    <div class="product-card">
+      <h3>${product.name}</h3>
+      <p>${product.description}</p>
+      <span class="price">₹${product.price}</span>
+      <button class="btn" onclick="addToCart(${product.id})">Add to Cart</button>
+    </div>
+  `).join('');
+}
+
+// Add to Cart
+function addToCart(productId) {
+  const product = products.find(p => p.id === productId);
+  if (product) {
+    cart.push({...product, cartId: Date.now()});
+    saveCart();
+    renderCart();
+    showNotification('✅ Added to cart!');
+  }
+}
+
+// Remove from Cart
+function removeFromCart(cartId) {
+  cart = cart.filter(item => item.cartId !== cartId);
+  saveCart();
+  renderCart();
+}
+
+// Render Cart
+function renderCart() {
+  if (cart.length === 0) {
+    cartContainer.innerHTML = '<p style="text-align: center; color: #999; padding: 30px;">Your cart is empty</p>';
+  } else {
+    cartContainer.innerHTML = cart.map(item => `
+      <div class="cart-item">
+        <div class="cart-item-info">
+          <h4>${item.name}</h4>
+          <p>₹${item.price}</p>
+        </div>
+        <button class="remove-btn" onclick="removeFromCart(${item.cartId})">Remove</button>
+      </div>
+    `).join('');
+  }
+  
+  // Update cart count
+  cartCount.textContent = cart.length;
+  
+  // Update total
+  const total = cart.reduce((sum, item) => sum + item.price, 0);
+  totalElement.textContent = total.toLocaleString('en-IN');
+}
+
+// Save Cart to LocalStorage (Offline Support)
+function saveCart() {
+  localStorage.setItem('pwa-shop-cart', JSON.stringify(cart));
+  console.log('💾 Cart saved to offline storage');
+}
+
+// Load Cart from LocalStorage
+function loadCart() {
+  const savedCart = localStorage.getItem('pwa-shop-cart');
+  if (savedCart) {
+    cart = JSON.parse(savedCart);
+    console.log('📂 Cart loaded from offline storage');
+  }
+}
+
+// Checkout
+function handleCheckout() {
+  if (cart.length === 0) {
+    alert('Your cart is empty!');
+    return;
+  }
+  
+  const total = cart.reduce((sum, item) => sum + item.price, 0);
+  alert(✅ Order placed successfully!\nTotal: ₹${total.toLocaleString('en-IN')}\n\nThank you for shopping with PWA Shop!);
+  
+  // Clear cart
+  cart = [];
+  saveCart();
+  renderCart();
+}
+
+// Show Notification
+function showNotification(message) {
+  const notification = document.createElement('div');
+  notification.textContent = message;
+  notification.style.cssText = `
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    background: #2ed573;
+    color: white;
+    padding: 15px 25px;
+    border-radius: 5px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    z-index: 1000;
+    animation: slideIn 0.3s ease;
+  `;
+  document.body.appendChild(notification);
+  setTimeout(() => notification.remove(), 2000);
+}
+
+// Online/Offline Status
+function checkOnlineStatus() {
+  window.addEventListener('online', () => {
+    statusBar.textContent = '✅ Back Online!';
+    statusBar.className = 'online';
+    setTimeout(() => statusBar.className = 'hidden', 3000);
+  });
+  
+  window.addEventListener('offline', () => {
+    statusBar.textContent = '❌ You are Offline - App still works!';
+    statusBar.className = 'offline';
+  });
+}
+
+// Setup Event Listeners
+function setupEventListeners() {
+  checkoutBtn.addEventListener('click', handleCheckout);
+}
+
+// Initialize on page load
+init();
